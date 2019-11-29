@@ -44,7 +44,19 @@ class mysql_analysis
         set_time_limit(0);//不限制脚本执行时间
 
         $param_arr = getopt("m:h:u:d:p:",
-            ["port:", "output::", "help::", "table::", "type::", "except::", "rollback::", "rk::","start-datetime:","stop-datetime:","mysqlbinlog:"]);
+            [
+                "port:",
+                "output::",
+                "help::",
+                "table::",
+                "type::",
+                "except::",
+                "rollback::",
+                "rk::",
+                "start-datetime:",
+                "stop-datetime:",
+                "mysqlbinlog:"
+            ]);
 
         $info = <<<EOF
         
@@ -75,7 +87,7 @@ EOF;
             $this->log($info . "\n", true);
         }
 
-        $this->log("\033[0;33;1m".$info . "\n");
+        $this->log("\033[0;33;1m" . $info . "\n");
 
         if (isset($param_arr['mysqlbinlog']) && $param_arr['mysqlbinlog']) {
             $this->mysqlbinlog = $param_arr['mysqlbinlog'];
@@ -115,7 +127,7 @@ EOF;
         //指定输出文件
         $this->outFile = fopen($param_arr['output'], 'w+');
 
-        $this->log("SQL文件保存路径:\e[0;31;1m".$param_arr['output']);
+        $this->log("SQL文件保存路径:\e[0;31;1m" . $param_arr['output']);
 
         $this->database = $param_arr['d'];
 
@@ -145,17 +157,17 @@ EOF;
             $this->stopDateTime = $param_arr['stop-datetime'];
         }
 
-        $this->file = isset($param_arr['m'])?$param_arr['m']:"";
+        $this->file = isset($param_arr['m']) ? $param_arr['m'] : "";
 
-        $this->log("指定操作类型:\033[0;31;1m".($this->type?implode("/",$this->type):"全部"));
+        $this->log("指定操作类型:\033[0;31;1m" . ($this->type ? implode("/", $this->type) : "全部"));
 
-        $this->log("指定表:\e[0;31;1m".($this->searchTable?implode("/",$this->searchTable):"全部"));
+        $this->log("指定表:\e[0;31;1m" . ($this->searchTable ? implode("/", $this->searchTable) : "全部"));
 
-        $this->log("排除指定表:\e[0;31;1m".($this->exceptTable?implode("/",$this->exceptTable):"无"));
+        $this->log("排除指定表:\e[0;31;1m" . ($this->exceptTable ? implode("/", $this->exceptTable) : "无"));
 
-        $this->log("insert语句去除主键:\e[0;31;1m".($this->rk?"去除":"不去除"));
+        $this->log("insert语句去除主键:\e[0;31;1m" . ($this->rk ? "去除" : "不去除"));
 
-        $this->log("是否生成回滚SQL:\e[0;31;1m".($this->rollback?"生成":"不生成"));
+        $this->log("是否生成回滚SQL:\e[0;31;1m" . ($this->rollback ? "生成" : "不生成"));
 
         //连接数据库=》用于获取表结构
         $this->mysqlConnect($param_arr['h'], $param_arr['u'], $param_arr['p'], $param_arr['d'],
@@ -186,7 +198,7 @@ EOF;
             $this->log($this->mysqli->connect_error, true);
         }
 
-        $this->getBinlog($host,$user,$password,$dataBase,$port);
+        $this->getBinlog($host, $user, $password, $dataBase, $port);
     }
 
 
@@ -198,14 +210,15 @@ EOF;
      * @param $dataBase
      * @param $port
      */
-    public function getBinlog($host,$user,$password,$dataBase,$port){
-        if(!is_dir("result")){
+    public function getBinlog($host, $user, $password, $dataBase, $port)
+    {
+        if (!is_dir("result")) {
             mkdir("result");
         }
 
         if (!$this->file) {
-            if(!$this->mysqlbinlog){
-                $this->log("请指定mysqlbinlog绝对地址",true);
+            if (!$this->mysqlbinlog) {
+                $this->log("请指定mysqlbinlog绝对地址", true);
             }
 
             $info = $this->mysqli->query("show global variables like '%binlog_format%';");
@@ -216,39 +229,39 @@ EOF;
                 $mode = $info->Value;
 
 
-                if(!isset($binInfo[0][0])){
-                    $this->log("读取远程binlog 失败，请尝试手动拉取binlog日志，并使用-m指定文件开始解析",true);
+                if (!isset($binInfo[0][0])) {
+                    $this->log("读取远程binlog 失败，请尝试手动拉取binlog日志，并使用-m指定文件开始解析", true);
                 }
 
                 $time = time();
 
-                $shell = $this->mysqlbinlog." --read-from-remote-server -h$host -u$user -p$password -P$port ".$binInfo[0][0];
+                $shell = $this->mysqlbinlog . " --read-from-remote-server -h$host -u$user -p$password -P$port " . $binInfo[0][0];
 
                 if (!in_array(strtolower($mode), array("mixed", "statement"))) {
                     //row模式
-                    $shell.=" --base64-output=DECODE-ROWS -vv";
+                    $shell .= " --base64-output=DECODE-ROWS -vv";
                 }
 
-                if($this->startDatetTime){
-                    $shell.=" --start-datetime=\"".strval($this->startDatetTime)."\"";
+                if ($this->startDatetTime) {
+                    $shell .= " --start-datetime=\"" . strval($this->startDatetTime) . "\"";
                 }
 
-                if($this->stopDateTime){
-                    $shell.=" --stop-datetime=\"".strval($this->stopDateTime)."\"";
+                if ($this->stopDateTime) {
+                    $shell .= " --stop-datetime=\"" . strval($this->stopDateTime) . "\"";
                 }
 
-                $shell.=" --to-last-log --result-file=result/binlog.log";
+                $shell .= " --to-last-log --result-file=result/binlog.log";
 
-                $this->log("开始获取远程binlog，起始log:".$binInfo[0][0]."\n指定开始时间:".($this->startDatetTime?$this->startDatetTime:"无")."\n指定结束时间:".($this->stopDateTime?$this->stopDateTime:"无"));
+                $this->log("开始获取远程binlog，起始log:" . $binInfo[0][0] . "\n指定开始时间:" . ($this->startDatetTime ? $this->startDatetTime : "无") . "\n指定结束时间:" . ($this->stopDateTime ? $this->stopDateTime : "无"));
 
                 shell_exec($shell);
 
-                $this->log("binlog获取完成,耗时:".(time()-$time)."s");
+                $this->log("binlog获取完成,耗时:" . (time() - $time) . "s");
 
-                if(file_exists("result/binlog.log") && filemtime("result/binlog.log")>$time){
+                if (file_exists("result/binlog.log") && filemtime("result/binlog.log") > $time) {
                     $this->file = "result/binlog.log";
-                }else{
-                    $this->log("读取远程binlog 失败，请尝试手动拉取binlog日志，并使用-m指定文件开始解析",true);
+                } else {
+                    $this->log("读取远程binlog 失败，请尝试手动拉取binlog日志，并使用-m指定文件开始解析", true);
                 }
             }
         }
@@ -326,9 +339,9 @@ EOF;
                     if (!$is_row && $inTable) {
                         //非row模式SQL直接输出，不需要再次进行处理
                         if (preg_match("/(INSERT INTO|UPDATE|DELETE FROM|ALTER TABLE|DROP TABLE IF EXISTS|CREATE TABLE)\s+([`\-_a-zA-Z]+\.[`\-_a-zA-Z]+)/i",
-                                $sql) || preg_match("/`" . $this->database . "`/",$sql)) {
+                                $sql) || preg_match("/`" . $this->database . "`/", $sql)) {
                             yield "statement" => $sql;
-                        }else{
+                        } else {
                             yield "statement" => preg_replace("/^(INSERT INTO|UPDATE|DELETE FROM|ALTER TABLE|CREATE TABLE|DROP TABLE IF EXISTS)\s*([`a-zA-Z_\-]*)\s*/i",
                                 "$1 " . $database . ".$2 ", $sql);
                         }
@@ -348,7 +361,7 @@ EOF;
      */
     public function analysisSql()
     {
-        $this->log("正在解析binlog:".$this->file);
+        $this->log("正在解析binlog:" . $this->file);
 
         foreach ($this->dealFile() as $mode => $value) {
             if (preg_match("/(INSERT INTO|UPDATE|DELETE FROM|ALTER TABLE|DROP TABLE IF EXISTS|CREATE TABLE)\s+([`\-_a-zA-Z\.]+)/i",
@@ -509,7 +522,8 @@ EOF;
                         }
                     }
 
-                    $sql = "insert into ".$match[2]." (".implode(",",$field).") values(".implode(",",$value).")";
+                    $sql = "insert into " . $match[2] . " (" . implode(",", $field) . ") values(" . implode(",",
+                            $value) . ")";
                 }
             }
         }
@@ -738,10 +752,10 @@ EOF;
     public function log($info, $die = false)
     {
         if ($die) {
-            echo "\033[0;31m\n提示:".$info."\033[0m".PHP_EOL;
+            echo "\033[0;31m\n提示:" . $info . "\033[0m" . PHP_EOL;
             exit("程序终止" . PHP_EOL);
-        }else{
-            echo "\033[0;32m$info\033[0m".PHP_EOL;
+        } else {
+            echo "\033[0;32m$info\033[0m" . PHP_EOL;
         }
     }
 
