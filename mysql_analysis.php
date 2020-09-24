@@ -418,8 +418,14 @@ EOF;
                         $this->out($mode, $value);
                         continue;
                     }
+
+                    if(preg_match("/^UPDATE\s+.*WHERE(.|\s)*\s*SET/i",$value)){
+                        $value = preg_replace("/^(UPDATE\s+.*)(WHERE(.|\s)*)(SET(.|\s)*)/i","$1 $4 $2",$value);
+                    }
+
+                    $value = preg_replace("/\s/",' ',$value);
                     //更新
-                    $where = explode(" SET", $value);
+                    $where = explode(" WHERE", $value);
 
                     foreach ($where as $k => $vv) {
                         if (preg_match_all("/\s+@\d+/", $vv, $match)) {
