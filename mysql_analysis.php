@@ -423,7 +423,7 @@ EOF;
                         $value = preg_replace("/^(UPDATE\s+.*)(WHERE(.|\s)*)(SET(.|\s)*)/i","$1 $4 $2",$value);
                     }
 
-                    $value = preg_replace("/\s/",' ',$value);
+//                    $value = preg_replace("/\s/",' ',$value);
                     //更新
                     $where = explode(" WHERE", $value);
 
