@@ -283,13 +283,22 @@ EOF;
         foreach ($this->readFile() as $n => $line) {
             if ($is_row == true) {
                 //row模式文件
-                if (preg_match("/^#{3}\s+(INSERT INTO|UPDATE|DELETE FROM).*/", $line, $match)) {
+                if (!$inTable && preg_match("/^#{3}\s+(INSERT INTO|UPDATE|DELETE FROM).*/", $line, $match)) {
                     //匹配到SQL，开始拼接
                     $sql = preg_replace("/^#{3}\s+/", '', $match[0]);
                     $inTable = true;
                 } else {
                     if ($inTable && preg_match("/^(#{3}\s+|\s+|@\d+).*/", $line, $match)) {
-                        $sql .= preg_replace("/^#{3}\s+/", ' ', $line);
+                        if(preg_match("/^#{3}\s+(INSERT INTO|UPDATE|DELETE FROM).*/", $line, $match_change)){
+                            //批量执行语句时
+                            $sql = preg_replace("/\/\*(.*)+\*\//", '', $sql);
+
+                            yield "row" => $sql;
+
+                            $sql = preg_replace("/^#{3}\s+/", '', $match[0]);
+                        }else{
+                            $sql .= preg_replace("/^#{3}\s+/", ' ', $line);
+                        }
                     } else {
                         if ($inTable) {
                             $sql = preg_replace("/\/\*(.*)+\*\//", '', $sql);
