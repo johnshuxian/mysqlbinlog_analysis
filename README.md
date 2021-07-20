@@ -3,6 +3,8 @@
 
 之前自己遇到了数据库恢复的问题，但是水平有限基于row模式的binlog得到日志中的伪SQL，无法执行，因此萌发出了自己编写一个解析类的想法，花了点时间用PHP写了这个类，自己测试没什么问题 适配了各种数据库模式，支持本地解析以及远程解析，执行起来也很简单，远程解析注意放行shell_exec函数就好
 
+**注意mysql用户名需要以下权限 SUPER, REPLICATION CLIENT privilege(s)**
+
 ```php
 example1(本地解析示例): php mysql_analysis.php -h"10.0.108.58" -ubee -dbee -pzxzdapp666 -maa.txt --output=aa.sql --table=wallet/user_role/jobs --except=wallet/user_role --port=3306
 
